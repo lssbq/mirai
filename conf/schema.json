@@ -1,0 +1,94 @@
+[
+    {
+        "BASIC_STOCKS": {
+            "schema": "basic",
+            "table": "stock_basic",
+            "fields": {
+                "guid": "uuid",
+                "code": "varchar(20)",
+                "name": "varchar(20)",
+                "industry": "varchar(50)",
+                "concept": "varchar(200)",
+                "sme": "boolean",
+                "gem": "boolean",
+                "st": "boolean",
+                "hs300": "float8",
+                "sh50": "boolean",
+                "zz500": "boolean",
+                "pe": "float8",
+                "outstanding": "float8",
+                "totals": "float8",
+                "total_assets": "float8",
+                "liquid_assets": "float8",
+                "time_to_market": "date",
+                "pb": "float8",
+                "rev": "float8",
+                "profit": "float8",
+                "holders": "integer"
+            }
+        }
+    },
+    {
+        "META_CODE": {
+            "schema": "meta",
+            "table": "code",
+            "fields": {
+                "guid": "uuid",
+                "code": "varchar(20)"
+            }
+        }
+    },
+    {
+        "META_INDEX": {
+            "schema": "meta",
+            "table": "index",
+            "fields": {
+                "guid": "uuid",
+                "code": "varchar(20)"
+            }
+        }
+    },
+    {
+        "DETAIL_MODEL": {
+            "schema": "detail",
+            "table": "%s",
+            "abstract": true,
+            "fields": {
+                "date": "date",
+                "open": "float8",
+                "high": "float8",
+                "close": "float8",
+                "low": "float8",
+                "volume": "float8",
+                "price_change": "float8",
+                "p_change": "float8",
+                "ma5": "float8",
+                "ma10": "float8",
+                "ma20": "float8",
+                "v_ma5": "float8",
+                "v_ma10": "float8",
+                "v_ma20": "float8",
+                "turnover": "float8"
+            }
+        }
+    },
+    {
+        "INDEX": {
+            "schema": "basic",
+            "table": "index",
+            "fields": {
+                "guid": "uuid",
+                "code": "varchar(20)",
+                "name": "varchar(20)",
+                "change": "float8",
+                "open": "float8",
+                "high": "float8",
+                "close": "float8",
+                "low": "float8",
+                "preclose": "float8",
+                "volume": "float8",
+                "amount": "float8"
+            }
+        }
+    }
+]

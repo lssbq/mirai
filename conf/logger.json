@@ -1,0 +1,15 @@
+{
+    "path": "./log",
+    "split": false,
+    "rootLevel": "info",
+    "consoleEnable": true,
+    "root": {
+        "level": "info"
+    },
+    "db": {
+        "level": "info"
+    },
+    "lib": {
+        "level": "trace"
+    }
+}

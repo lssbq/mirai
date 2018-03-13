@@ -1,0 +1,9 @@
+{
+    "type": "postgre_sql",
+    "host": "16.186.75.158",
+    "port": 5432,
+    "user": "lssbq",
+    "passwd": "iso*help",
+    "db": "stock",
+    "autocommit": false
+}
