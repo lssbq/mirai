@@ -1,0 +1,15 @@
+[Unit]
+Description=Mirai
+After=network.target
+Wants=
+
+[Service]
+Type=forking
+WorkingDirectory=/opt/mirai/
+ExecStart=/bin/bash -c 'python3 -m scheduler.run start'
+PIDFile=/var/run/mirai.pid
+SyslogIdentifier=Mirai
+User=root
+
+[Install]
+WantedBy=multi-user.target

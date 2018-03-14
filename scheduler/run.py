@@ -17,7 +17,7 @@ class Task(Daemon):
 
 
 if __name__ == '__main__':
-    daemon = Task('/tmp/lssbq.pid', stdout='/var/log/lssbq/stdout', stderr='/var/log/lssbq/stderr')
+    daemon = Task('/var/run/mirai.pid', stdout='/var/log/mirai/stdout', stderr='/var/log/mirai/stderr')
     if len(sys.argv) == 2:
         if 'start' == sys.argv[1]:
             daemon.start()
