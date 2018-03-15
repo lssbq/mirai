@@ -61,9 +61,11 @@ def get_index():
             schema.get_schema('INDEX').insert(**_v).execute()
     # Update metadata
     schema.get_schema('META_INDEX').delete('True').execute()
+    log.info('Update META for index')
     for item in index.reindex(['guid', 'code'], axis=1).to_dict('index').values():
         schema.get_schema('META_INDEX').insert(**item).execute()
     db.commit()
+    return len(index)
 
 
 def create_table(code):
@@ -94,6 +96,7 @@ def get_index_detail(code, date=None):
         schema.get_schema('DETAIL_MODEL').set_table('i_'+code).insert(**item).execute()
 
 
+@LogTime(logger=log)
 def __get_hist(code, date=None):
     """ 获取沪深指数Tushare Old API """
     log.info('Get history data from old API for code: %s'%code)
@@ -113,6 +116,7 @@ def __get_hist(code, date=None):
         raise err
 
 
+@LogTime(logger=log)
 def __get_k(code, date=None):
     """ 获取沪深重要指数 Tushare New API"""
     log.info('Get k data from new API for code: %s'%code)
@@ -132,6 +136,13 @@ def __get_k(code, date=None):
         raise err
 
 
+
+def do():
+    log.info('Start daily task to fetch index info')
+    length = get_index()
+    log.info('Finished index data fetch, total: [%s]'%length)
+    return "{'index': %d }"%length
+
+
 if __name__ == '__main__':
     get_index()
-    db.commit()

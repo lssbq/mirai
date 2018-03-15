@@ -6,6 +6,10 @@ from .Daemon import Daemon
 
 
 class Task(Daemon):
+    def __init__(self):
+        # Hard coded stdout and stderr and pidfile
+        super().__init__('/var/run/mirai.pid', stdout='/var/log/mirai/stdout', stderr='/var/log/mirai/stderr')
+
     def work(self):
         print('Daemon running, now is %s'%dt.datetime.now().isoformat())
 
@@ -16,8 +20,12 @@ class Task(Daemon):
             time.sleep(1)
 
 
+
+
+
+
 if __name__ == '__main__':
-    daemon = Task('/var/run/mirai.pid', stdout='/var/log/mirai/stdout', stderr='/var/log/mirai/stderr')
+    daemon = Task()
     if len(sys.argv) == 2:
         if 'start' == sys.argv[1]:
             daemon.start()

@@ -13,7 +13,7 @@ class Timer(object):
 
     def start(self):
         if self._start is not None:
-            raise RuntimeError('Timer already started!ß')
+            raise RuntimeError('Timer already started!')
         self._start = self._func()
 
     def stop(self):
@@ -34,8 +34,7 @@ class Timer(object):
 
 
 LOGGER = Logger('root')
-TIMER = Timer()
-def LogTime(logger=LOGGER, timer=TIMER):
+def LogTime(logger=LOGGER, timer=None):
     """
     Usage : 
         @LogTime(logger, timer)
@@ -43,29 +42,19 @@ def LogTime(logger=LOGGER, timer=TIMER):
     As decorator to log a function time with default timer 'perf_counter'
     You can pass your own timer and logger 
     """
+    if timer is None:
+        timer = Timer()
+
     class _LogTime(object):
         def __init__(self, func):
             self._func = func
             self._logger = logger
-            self._timer = TIMER
+            self._timer = timer
+            print(timer)
 
-        def __call__(self, *args):
+        def __call__(self, *args, **kwargs):
             with self._timer:
-                self._func(*args)
+                _res = self._func(*args, **kwargs)
             self._logger.info('[%s] Finished in %.3fms'%(self._func.__name__, self._timer.elapse*1000))
+            return _res
     return _LogTime
-
-
-if __name__ == '__main__':
-    @LogTime()
-    async def test1():
-        for i in range(100000000):
-            i  = i ^ 2
-
-    @LogTime()
-    async def test2():
-        for i in range(1000000):
-            i  = i ^ 2
-
-    test1()
-    test2()

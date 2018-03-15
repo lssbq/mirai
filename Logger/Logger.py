@@ -108,19 +108,19 @@ class Logger():
 
     def trace(self, msg):
         if self._enable(level='trace'):
-            Logger.logger.trace(self.srv_pf + msg)
+            Logger.logger.trace(self.srv_pf + str(msg))
     
     def info(self, msg):
         if self._enable(level='info'):
-            Logger.logger.info(self.srv_pf + msg)
+            Logger.logger.info(self.srv_pf + str(msg))
 
     def debug(self, msg):
         if self._enable(level='debug'):
-            Logger.logger.debug(self.srv_pf + msg)
+            Logger.logger.debug(self.srv_pf + str(msg))
 
     def error(self, msg):
         if self._enable(level='error'):
-            Logger.logger.error(self.srv_pf + msg)
+            Logger.logger.error(self.srv_pf + str(msg))
 
 
 
