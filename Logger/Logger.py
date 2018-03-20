@@ -3,7 +3,8 @@ Logger package for db, lib
 """
 from . import LoggerConf
 import datetime as dt
-import os
+import os, sys
+import threading
 
 
 LOG_FILE_NAME = 'output.log'
@@ -64,13 +65,15 @@ class Logger():
                 self.now = dt.date.today()
 
             time_pf = dt.datetime.now().__str__()
-            self.fp.write(time_pf + ' ' + lv + msg + '\n')
+            _thread = ' [' + threading.currentThread().getName() + '] '
+            self.fp.write(time_pf + ' ' + lv + _thread + msg + '\n')
             # Console enable
             if self.conf.CONSOLE:
                 # Colorful ~~~~
                 _lv = lv[1:-1]
-                _lv_col = getattr(Logger._ANSI_COLOR, _lv) + lv + Logger._ANSI_COLOR.ENDC
-                print(Logger._ANSI_COLOR.TIME + time_pf + Logger._ANSI_COLOR.ENDC + ' ' + _lv_col + msg)
+                _lv_col = getattr(Logger._ANSI_COLOR, _lv.strip()) + lv + Logger._ANSI_COLOR.ENDC
+                sys.stdout.write(Logger._ANSI_COLOR.TIME + time_pf + Logger._ANSI_COLOR.ENDC + ' '
+                                 + _lv_col + _thread + msg +'\n')
 
         def trace(self, msg: str):
             _lv = '[' + LoggerConf.LOG_LEVEL['trace'] + ']'

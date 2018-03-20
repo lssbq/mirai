@@ -4,7 +4,7 @@ Read the logger configure file to initial Logger instance
 import json
 from Error.ConfigError import ConfigError
 
-LOG_LEVEL = {'trace': 'TRACE', 'info': 'INFO','debug':'DEBUG', 'error':'ERROR'}
+LOG_LEVEL = {'trace': 'TRACE', 'info': 'INFO ','debug':'DEBUG', 'error':'ERROR'}
 LEVEL_CMP = {'trace': 1, 'info': 2,'debug': 3, 'error':4}
 ROOT_LEVEL = None
 PATH = None
