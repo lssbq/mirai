@@ -14,6 +14,8 @@ password = None
 db_name = None
 autocommit = False
 dsn=''
+pool_min = 10
+pool_max = 20
 
 log.trace('Read db configuration file: \'connection.json\'')
 with open('./conf/connection.json', mode='r', encoding='utf-8') as fp:
@@ -30,6 +32,8 @@ with open('./conf/connection.json', mode='r', encoding='utf-8') as fp:
         password = conf['passwd']
         db_name = conf['db']
         autocommit = conf['autocommit']
+        pool_min = conf["pool_min"]
+        pool_max = conf["pool_max"]
 
     except KeyError as err:
         raise ConfigError(err, 'Undefined key or unrecognized key name!')

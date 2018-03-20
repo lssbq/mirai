@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 # Need install psycop2 for Python 3
 import psycopg2 as pg
+from psycopg2.pool import ThreadedConnectionPool
 from . import db_configuration as conf
 from Logger.Logger import Logger
 from utils.SingletonMixin import SingletonMixin
@@ -8,32 +9,41 @@ from utils.SingletonMixin import SingletonMixin
 log = Logger('db')
 
 class DB():
-    class _db(SingletonMixin):
+    class _pool(SingletonMixin):
+        """ Pg pool class to provied connections,
+            it should be singleton and thread safe
+        """
+        def __init__(self):
+            log.trace('Starting init pg pool...')
+            try:
+                log.trace('Database type: %s'%conf.db_type)
+                log.trace('Generated "dsn": "%s"'%conf.dsn)
+                self.pool = ThreadedConnectionPool(conf.pool_min,conf.pool_max,conf.dsn)
+            except Exception as err:
+                log.error('Failed to init pg pool. %s'%str(err))
+
+        def get_con(self):
+            try:
+                # Except when pool is poor
+                __con = self.pool.getconn()
+            except Exception as err:
+                log.error('Error get connection from pool: %s'%str(err))
+            __con.autocommit = conf.autocommit
+            return __con
+
+        def put_con(self, conn):
+            if conn is not None and not conn.closed:
+                self.pool.putconn(conn=conn)
+
+    class _db():
         t_status = {0:'TRANSACTION_STATUS_IDLE', 1:'TRANSACTION_STATUS_ACTIVE', 2:'TRANSACTION_STATUS_INTRANS', 3:'TRANSACTION_STATUS_INERROR', 4:'TRANSACTION_STATUS_UNKNOWN'}            
         c_status = {0:'STATUS_READY', 1:'STATUS_BEGIN', 2:'STATUS_IN_TRANSACTION', 3:'STATUS_PREPARED'}
         
         def __init__(self):
-            log.trace('Starting connect to database.')
-            self.con = self.con_init()
+            self.__ins = DB._pool.instance()
+            self.con = self.__ins.get_con()
+            log.trace('Successfully got connection from pg pool.')
             self.cursor = self.con.cursor()
-
-        # Create connection to db
-        def con_init(self):
-            log.info('Database connection init...')
-            try:
-                log.trace('Database type: %s'%conf.db_type)
-                log.trace('Generated "dsn": "%s"'%conf.dsn)
-                self.con = pg.connect(conf.dsn)
-                self.con.autocommit = conf.autocommit
-            except Exception as err:
-                log.error('Failed to connect to database. %s'%err)
-
-            log.trace('Successfully connected to database: \n\thost: %s:%s\n\tdb: %s\n\tuser: %s' %(conf.host, conf.port, conf.db_name, conf.user))
-            log.trace('Server version: %s; encoding: %s'%\
-                (self.con.get_parameter_status('server_version'), self.con.get_parameter_status('server_encoding')))
-            log.info('Successfully connected to database')
-            # Open a Cursor to operate database
-            return self.con
 
         def execute(self, sql: str):
             if self.cursor and not self.cursor.closed:
@@ -90,16 +100,17 @@ class DB():
                 self.con.rollback()
                 log.error('Session has been rollback!')
 
-    # Singleton the DB connection
-    # instance = None
+        def put_con(self):
+            # This executer is end now
+            self.__ins.put_con(self.con)
+            return None
+
     def __init__(self):
         pass
-        # if DB.instance is None:
-        #     DB.instance = DB._db()
 
     def get_exec(self):
         # return DB.instance
-        return DB._db.instance()
+        return DB._db()
 
 
 
@@ -134,9 +145,7 @@ if __name__ == '__main__':
 
     db1 = DB().get_exec()
     db2 = DB().get_exec()
-    print(db1)
-    print(db2)
-    # Build an exception
-    # db.execute('SELECT * FROM detail.ii;')
-    # db.execute('SELECT * FROM meta.index;')
-    # db.rollback()
+    print(db1.con)
+    print(db2.con)
+    db1.put_con()
+    db2.put_con()

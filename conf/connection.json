@@ -5,5 +5,7 @@
     "user": "lssbq",
     "passwd": "iso*help",
     "db": "stock",
+    "pool_min": 10,
+    "pool_max": 30,
     "autocommit": false
 }
