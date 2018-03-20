@@ -9,6 +9,7 @@ from utils.Singleton import Singleton
 from Logger.Logger import Logger
 from .value import value as sql_value
 from .pg_opt import DB
+from copy import deepcopy
 
 log = Logger('db')
 __SCHEMA = dict()
@@ -27,14 +28,6 @@ class Schema(object):
         def value(self, _v):
             self.__value = sql_value(_v, self.type)
 
-    @Singleton
-    class __exec():
-        def __init__(self):
-            self.db = DB().get_exec()
-    
-        def __getattr__(self, attr):
-            return getattr(self.db, attr)
-
     def __init__(self, schema):
         self.name = list(schema.keys())[0] # Should always contents one object
         _conf = schema[self.name]
@@ -43,7 +36,7 @@ class Schema(object):
         self.schema = _conf['schema']
         self.table = _conf['table']
         self.fields = dict()
-        self._exec = self.__exec.Instance()
+        self._exec = None
         self.__sql = ''
         for key in _conf['fields']:
             self.fields[key] = self.__Field(key, _conf['fields'][key], self.name)
@@ -61,6 +54,12 @@ class Schema(object):
                 _sql_val += ',' + self.fields[key].value
         return _sql_key+') VALUES'+_sql_val+')'
 
+    def __field_create(self):
+        _sql = ''
+        for item in self.fields.values():
+            _sql += item.key + ' ' + item.type + ','
+        return _sql
+
     def __check_ready(self):
         # Raise error if not set table name for abstract schema
         if self.abstract and not self.ready:
@@ -71,13 +70,26 @@ class Schema(object):
             self.ready = False
 
     def execute(self):
-        if self.__sql:
+        if self._exec is None:
+            raise Exception('Schema is closed or not init, could not execute.')
+        elif self.__sql:
             log.trace('Execute SQL: [[%s]]'%self.__sql)
-            _self = self._exec.execute(self.__sql)
+            self._exec.execute(self.__sql)
             self.__sql = ''
         else:
             raise Exception('No operation will be executed, please select an SQL operation before.')
-        return _self
+        return self
+
+    def commit(self):
+        self._exec.commit()
+        return self
+
+    def rollback(self):
+        self._exec.rollback()
+        return self
+
+    def fetch(self):
+        return self._exec.fetch()
 
     def select(self, fields: list, exp: str = None, **args):
         self.__check_ready()
@@ -102,7 +114,7 @@ class Schema(object):
 
     def update(self, uuid, **args):
         self.__check_ready()
-        log.info('SQL UPDATE will be excuted to update "%s.%s" with : %s'%(self.schema, self.table, args))
+        log.trace('SQL UPDATE will be excuted to update "%s.%s" with : %s'%(self.schema, self.table, args))
         log.trace('Build UPDATE expression in %s.%s' %(self.schema, self.table))
         _sql = ''
         for key in args:
@@ -139,12 +151,6 @@ class Schema(object):
         self.__sql = _sql
         return self
 
-    def __field_create(self):
-        _sql = ''
-        for item in self.fields.values():
-            _sql += item.key + ' ' + item.type + ','
-        return _sql
-
     def exist(self, t_name):
         _sql = "SELECT EXISTS (SELECT 1 FROM information_schema.tables\
                  WHERE table_schema='%s' AND table_name='%s');"%(self.schema, t_name)
@@ -160,6 +166,11 @@ class Schema(object):
         # Always return psycopg connection object, no dependence of Schema instance
         return self._exec.get_con()
 
+    def close(self):
+        self.ready = False
+        self._exec.put_con()
+        # Can not execute after closed
+        self._exec = None
 
 
 # Read schema configuration form json file
@@ -177,7 +188,11 @@ def get_schema(name: str):
     Return the Schema to build SQL command.
     """
     if name in __SCHEMA:
-        return __SCHEMA[name]
+        # Get connection from pg pool for every lib
+        db = DB().get_exec()
+        res = deepcopy(__SCHEMA[name])
+        res._exec = db
+        return res
     else:
         log.error('Get schema: \'%s\' not found.' % (name))
         raise SchemaNotFound(name)
@@ -186,18 +201,22 @@ def get_schema(name: str):
 __all__ = ['get_schema']
 
 
-#=====================================
 if __name__ == '__main__':
-    # schema = get_schema('BASIC_STOCKS').update('cf52cbc2-126a-4fdc-ab15-dc52f3d266d9',**{'totals': '123', 'pe': '234', 'holders':'123.345', 'time_to_market': None})
-    # select = get_schema('BASIC_STOCKS').select(['guid', 'code', 'name'],**{'totals': '123', 'pe': '234', 'holders':'123.345'})
-    # select = get_schema('BASIC_STOCKS').select(['guid', 'code', 'name'])
-    # create = get_schema('DETAIL_MODEL').set_table('600001').create_table()
-    # print(schema)
-    # print(select)
-    # print(create)
-    db = DB().get_exec()
-    print(db)
-    db.execute('SELECT * FROM meta.index;')
-    # res = get_schema('META_INDEX').select(['guid', 'code']).execute()
-    res = get_schema('META_INDEX').get_con()
-    print(res)
+
+    # db = DB().get_exec()
+    # print(db)
+    # db.execute('SELECT * FROM meta.index;')
+    # # res = get_schema('META_INDEX').select(['guid', 'code']).execute()
+    # res = get_schema('META_INDEX').get_con()
+    # print(res)
+
+    import time
+
+    def fun():
+        e = get_schema('META_INDEX')
+        print(e._exec)
+        e.close()
+
+    from threading import Thread
+    Thread(target=fun, name="1").start()
+    Thread(target=fun, name="2").start()
