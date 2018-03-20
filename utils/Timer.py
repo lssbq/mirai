@@ -45,16 +45,24 @@ def LogTime(logger=LOGGER, timer=None):
     if timer is None:
         timer = Timer()
 
-    class _LogTime(object):
-        def __init__(self, func):
-            self._func = func
-            self._logger = logger
-            self._timer = timer
-            print(timer)
+    # class _LogTime(object):
+    #     def __init__(self, func):
+    #         self._func = func
+    #         self._logger = logger
+    #         self._timer = timer
 
-        def __call__(self, *args, **kwargs):
-            with self._timer:
-                _res = self._func(*args, **kwargs)
-            self._logger.info('[%s] Finished in %.3fms'%(self._func.__name__, self._timer.elapse*1000))
+    #     def __call__(self, *args, **kwargs):
+    #         with self._timer:
+    #             _res = self._func(*args, **kwargs)
+    #         self._logger.info('[%s] Finished in %.3fms'%(self._func.__name__, self._timer.elapse*1000))
+    #         return _res
+
+    def Wrapper(func): 
+        def _wrap_method(*args, **kwargs):
+            with timer:
+                _res = func(*args, **kwargs)
+            logger.info('[%s] Finished in %.3fms'%(func.__name__, timer.elapse*1000))
             return _res
-    return _LogTime
+        return _wrap_method
+    return Wrapper
+
