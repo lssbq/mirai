@@ -10,6 +10,9 @@ class SingletonMixin(object):
     __singleton_lock = threading.Lock()
     __singleton_instance = None
     
+    def __call__(self):
+        raise TypeError('Singletons must be accessed through `instance()`.')
+
     @classmethod
     def instance(cls):
         if not cls.__singleton_instance:
