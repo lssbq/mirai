@@ -18,7 +18,6 @@ import numpy as np
 import pandas as pd
 import tushare as ts
 import datetime as dt
-import psycopg.pg_opt as pg
 import psycopg.schema as schema
 from urllib.error import HTTPError
 from Logger.Logger import Logger
@@ -29,9 +28,14 @@ OLD = {'000001': 'sh', '399001': 'sz', '000300': 'hs300', '000016': 'sz50', '399
 
 
 log = Logger('lib')
-db = pg.DB().get_exec()
-con = db.get_con()
 
+_index = schema.get_schema('INDEX')
+meta_index = schema.get_schema('META_INDEX')
+detail = schema.get_schema('DETAIL_MODEL')
+
+
+# Collect basic data from current records in db
+con = _index.get_con()
 meta = pd.read_sql_query('SELECT * FROM meta.index', con)
 
 
@@ -41,8 +45,10 @@ def get_index():
     log.info('Start update index on : %s'%_today)
 
     index = ts.get_index()
+    # Create table for new index data which code not in the meta table
     create_table(index[np.isin(index['code'], meta['code'], invert=True)])
     index['guid'] = [uuid.uuid4() for _ in index['code']]
+
     for code in index['code']:
         if code in list(meta['code']):
             # Update only
@@ -52,31 +58,35 @@ def get_index():
             _v = list(index[index['code']==code]
                 .reindex(['change','open','close','high','low','preclose','volume','amount'], axis=1)
                 .to_dict('index').values())[0]
-            schema.get_schema('INDEX').update(meta[np.isin(meta['code'], code)]['guid'].iloc[0], **_v).execute()
+            _index.update(meta[np.isin(meta['code'], code)]['guid'].iloc[0], **_v).execute()
         else:
-            # Fetch all
+            # Fetch all for new index not in meta
             log.info('New index code %s, fetch all data.'%code)
             get_index_detail(code)
             _v = list(index[index['code']==code].to_dict('index').values())[0]
-            schema.get_schema('INDEX').insert(**_v).execute()
+            _index.insert(**_v).execute()
+    
     # Update metadata
-    schema.get_schema('META_INDEX').delete('True').execute()
+    meta_index.delete('True').execute()
     log.info('Update META for index')
+
     for item in index.reindex(['guid', 'code'], axis=1).to_dict('index').values():
-        schema.get_schema('META_INDEX').insert(**item).execute()
-    db.commit()
+        meta_index.insert(**item).execute()
+
+    meta_index.commit()
+    _index.commit()
+
     return len(index)
 
 
 def create_table(code):
     if code.empty:
         return None
-    log.info('Start create table for new index')
     for item in code['code']:
-        log.info('Create table for: %s'%item)
-        schema.get_schema('DETAIL_MODEL').set_table('i_'+item).create_table().execute()
+        log.info('Create table for new index: %s'%item)
+        detail.set_table('i_'+item).create_table().execute()
     # Should be commit immediately after create table
-    db.commit()        
+    detail.commit()
 
 
 @LogTime(logger=log)
@@ -90,10 +100,11 @@ def get_index_detail(code, date=None):
         data = __get_k(code, date=date)
         log.info('Fetch index detail with NEW API for : %s'%code)
     # If data is empty DataFrame, for loop will not execute
+    log.trace('Insert [%s] data into i_%s'%(len(data.index), code))
     for item in data.to_dict('index').values():
         # Insert all data for new index or insert today data to update
-        log.trace('Insert data into i_%s'%code)
-        schema.get_schema('DETAIL_MODEL').set_table('i_'+code).insert(**item).execute()
+        detail.set_table('i_'+code).insert(**item).execute()
+    detail.commit()
 
 
 @LogTime(logger=log)
@@ -102,17 +113,15 @@ def __get_hist(code, date=None):
     log.info('Get history data from old API for code: %s'%code)
     try:
         if date is None:
-            log.trace('Get HS index.')
             _data = ts.get_hist_data(code)
         else:
-            log.trace('Update HS index for %s'%date)
             _data = ts.get_hist_data(code, start=date)
         if _data is not None and not _data.empty:
             return _data.reset_index()
         else:
             return pd.DataFrame()
     except Exception as err:
-        log.error('Could not fetch index details.')
+        log.error('OLD API: Could not fetch index details.')
         raise err
 
 
@@ -122,17 +131,15 @@ def __get_k(code, date=None):
     log.info('Get k data from new API for code: %s'%code)
     try:
         if date is None:
-            log.trace('Get HS index.')
             _data = ts.get_k_data(code, index=True)
         else:
-            log.trace('Update HS index for %s'%date)
             _data = ts.get_k_data(code, index=True, start=date)
         if _data is not None and not _data.empty:
             return _data.reindex(['date', 'open', 'close', 'high', 'low', 'volume'], axis=1)
         else:
             return pd.DataFrame()
     except Exception as err:
-        log.error('Could not fetch index details.')
+        log.error('New API: Could not fetch index details.')
         raise err
 
 
@@ -140,6 +147,9 @@ def __get_k(code, date=None):
 def do():
     log.info('Start daily task to fetch index info')
     length = get_index()
+    _index.close()
+    meta_index.close()
+    detail.close()
     log.info('Finished index data fetch, total: [%s]'%length)
     return "{'index': %d }"%length
 

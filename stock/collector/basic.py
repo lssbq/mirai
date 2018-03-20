@@ -10,8 +10,6 @@ import datetime as _dt
 import re
 from urllib.error import HTTPError
 from Error.NoData import NoData
-import psycopg.pg_opt as pg
-import psycopg.schema as schema
 from Logger.Logger import Logger
 
 log = Logger('lib')
