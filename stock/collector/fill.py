@@ -144,9 +144,9 @@ class Filler(Thread):
         self.basic.close()
         self._meta.close()
         self.detail.close()
-        self.log.info('Finished basic data fetch, total: [%s]'%len(hs))
+        self.log.info('Finished basic data fetch, total: [%s]'%len(self.hs))
         self.log.info('Got newly stocks: [%s]'%len(add))
-        return "{'total': %d, 'new': %d }"%(len(hs), len(add))
+        return "{'total': %d, 'new': %d }"%(len(self.hs), len(add))
 
 
 
