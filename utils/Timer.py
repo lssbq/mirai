@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 import time
 from Logger.Logger import Logger
+from copy import deepcopy
 
 # root Logger as default logger
 # Create timer object as default timer
@@ -57,11 +58,12 @@ def LogTime(logger=LOGGER, timer=None):
     #         self._logger.info('[%s] Finished in %.3fms'%(self._func.__name__, self._timer.elapse*1000))
     #         return _res
 
-    def Wrapper(func): 
+    def Wrapper(func):
         def _wrap_method(*args, **kwargs):
-            with timer:
+            _timer = deepcopy(timer)
+            with _timer:
                 _res = func(*args, **kwargs)
-            logger.info('[%s] Finished in %.3fms'%(func.__name__, timer.elapse*1000))
+            logger.info('[%s] Finished in %.3fms'%(func.__name__, _timer.elapse*1000))
             return _res
         return _wrap_method
     return Wrapper
