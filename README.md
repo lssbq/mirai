@@ -12,4 +12,4 @@ Still not found the root cause.
 
 
 ## TODO
-Find a common way to decorator normal method and instance method, decorator should be **!!thread-safe!!**
+Find a common way to decorator normal method and instance method, decorator should be **thread-safe**
