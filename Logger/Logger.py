@@ -65,7 +65,7 @@ class Logger():
                 self.now = dt.date.today()
 
             time_pf = dt.datetime.now().__str__()
-            _thread = ' [' + threading.currentThread().getName() + '] '
+            _thread = '[' + threading.currentThread().getName() + ']'
             self.fp.write(time_pf + ' ' + lv + _thread + msg + '\n')
             # Console enable
             if self.conf.CONSOLE:

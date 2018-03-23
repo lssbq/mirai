@@ -6,6 +6,6 @@
     "passwd": "iso*help",
     "db": "stock",
     "pool_min": 10,
-    "pool_max": 30,
+    "pool_max": 40,
     "autocommit": false
 }

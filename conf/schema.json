@@ -90,5 +90,15 @@
                 "amount": "float8"
             }
         }
+    },
+    {
+        "DAILY": {
+            "schema": "meta",
+            "table": "daily",
+            "fields": {
+                "date": "date",
+                "data": "jsonb"
+            }
+        }
     }
 ]

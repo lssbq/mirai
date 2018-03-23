@@ -22,6 +22,7 @@ import psycopg.schema as schema
 from urllib.error import HTTPError
 from Logger.Logger import Logger
 from utils.Timer import LogTime
+from socket import timeout
 from threading import Thread, Event
 
 INDEX = ['000001', '000002', '000003', '000008', '000009', '000010', '000011', '000012', '000016', '000017', '000300', '000905', '399001', '399002', '399003', '399004', '399005', '399006', '399008', '399100', '399101', '399106', '399107', '399108', '399333', '399606']
@@ -44,12 +45,20 @@ class Indexer(Thread):
         self.meta = pd.read_sql_query('SELECT * FROM meta.index', con)
 
 
+    def __get_index(self):
+        try:
+            return ts.get_index()
+        except timeout:
+            # Retry when timeout
+            return ts.get_index()
+
+
     def get_index(self):
         _today = dt.date.today().isoformat()
 
         self.log.info('Start update index on : %s'%_today)
 
-        index = ts.get_index()
+        index = self.__get_index()
         # Create table for new index data which code not in the meta table
         self.create_table(index[np.isin(index['code'], self.meta['code'], invert=True)])
         index['guid'] = [uuid.uuid4() for _ in index['code']]
@@ -115,7 +124,7 @@ class Indexer(Thread):
     @LogTime()
     def __get_hist(self, code, date=None):
         """ 获取沪深指数Tushare Old API """
-        self.log.info('Get history data from old API for code: %s'%code)
+        self.log.trace('Get history data from old API for code: %s'%code)
         try:
             if date is None:
                 _data = ts.get_hist_data(code)
@@ -133,7 +142,7 @@ class Indexer(Thread):
     @LogTime()
     def __get_k(self, code, date=None):
         """ 获取沪深重要指数 Tushare New API"""
-        self.log.info('Get k data from new API for code: %s'%code)
+        self.log.trace('Get k data from new API for code: %s'%code)
         try:
             if date is None:
                 _data = ts.get_k_data(code, index=True)
@@ -163,7 +172,7 @@ def do():
     ready = Event()
     Indexer(name='Index-1', event=ready).start()
 
-    ready.wait()
+    # ready.wait()
 
     return None
 

@@ -11,6 +11,7 @@ import re
 from urllib.error import HTTPError
 from Error.NoData import NoData
 from Logger.Logger import Logger
+from socket import timeout
 
 log = Logger('lib')
 
@@ -40,6 +41,9 @@ def __get_hs(date=None) -> pd.DataFrame:
             raise NoData(date, 'Not Found')
         else:
             raise err
+    except timeout:
+        # Handle timeout exception
+        __get_hs_daily(date)
     except Exception as e:
             log.error('Could not fetch HS basics data at %s' % date)
             log.error(e)
