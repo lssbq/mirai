@@ -10,6 +10,7 @@ Entry point of basic stock data cokllector
 import time
 import tushare as ts
 import datetime as dt
+from queue import Queue
 import psycopg.pg_opt as pg
 from threading import Thread
 import psycopg.schema as schema
@@ -23,14 +24,16 @@ log = Logger('lib')
 today = dt.date.today().isoformat()
 daily = schema.get_schema('DAILY')
 RETRY_COUNT = 3
+THREAD_NUM = 10
+q = Queue()
 
 
 def _check_update():
     res = daily.select(["*"], date='\'%s\''%today).execute().fetch()
     if len(res):
-        return True
-    # Already done today
-    return False
+        return False
+    # Not done today
+    return True
 
 
 def _update_meta(**kargs):
@@ -43,17 +46,30 @@ def _update_meta(**kargs):
     json_str = '{' + json_str[:-1] + '}'
     daily.insert(**{'date': today, 'data': json_str}).execute()
     daily.commit()
+    daily.close()
 
 def _job():
-    f = Thread(target=fill.do, name='Init-fill')
-    i = Thread(target=index.do, name='Init-index')
+    f = Thread(target=fill.do, args=(q, THREAD_NUM), name='Init-fill')
+    i = Thread(target=index.do, args=(q,), name='Init-index')
     f.start()
     i.start()
+
+    _stocks = 0
+    _new_stocks = 0
+    _index = 0
+    _status = 0
+    for i in range(THREAD_NUM + 1):
+        _data = q.get()
+        _stocks += _data.get('stocks', 0)
+        _new_stocks += _data.get('new', 0)
+        _index += _data.get('index', 0)
+    _status = 1
+    _update_meta(status=_status, stocks=_stocks, new_stocks=_new_stocks, index=_index)
 
 
 def _start():
     # is_holiday only accept ISO format: %Y-%m-%d
-    if not ts.is_holiday(today) and _check_update():
+    if not ts.is_holiday(today):
         flag = False
         for i in range(RETRY_COUNT):
             try:
@@ -64,7 +80,7 @@ def _start():
                 if err.getcode() == 404:
                     time.sleep(1800)
                     continue
-        if flag:
+        if flag and _check_update():
             log.info('===============================================')
             log.info('Collector daily task \'%s\' start.'%today)
             _job()
@@ -74,12 +90,12 @@ def _start():
             _update_meta(status=0)
     else:
         log.info('===============================================')
-        log.info('\'%s\' is holiday, nothing to update in database.')
+        log.info('\'%s\' is holiday, nothing to update in database.'%today)
 
 
 
 def run():
-    pass
+    _start()
 
 
 

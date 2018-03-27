@@ -27,6 +27,7 @@ class Filler(Thread):
         self.meta = pd.read_sql_query('SELECT * FROM meta.code', con)
         # self.hs = pd.DataFrame()
         self.hs = kwargs['hs']
+        self.q = kwargs['q']
 
 
     def basic_daily(self):
@@ -145,21 +146,21 @@ class Filler(Thread):
         self.detail.close()
         self.log.info('Finished basic data fetch, total: [%s]'%len(self.hs))
         self.log.info('Got newly stocks: [%s]'%len(add))
-        return "{'total': %d, 'new': %d }"%(len(self.hs), len(add))
+        self.q.put({'stocks':len(self.hs) , 'new':len(add) })
 
 
 
-def do():
+def do(q, threads=10):
     hs = get_basics()
     total = len(hs.index)
     total = len(hs)    
-    step = total//10
-    for i in range(10):
-        if i == 9:
+    step = total//threads
+    for i in range(threads):
+        if i == threads-1:
             sub = hs[(step*i) : total]
         else:
             sub = hs[(step*i) : step*(i+1)]
-        Filler('filler-%s'%i, hs=sub).start()
+        Filler('filler-%s'%i, hs=sub, q=q).start()
 
 
 # hs['sh50'] = np.where(hs['code'].isin(sh['code']), True, False)

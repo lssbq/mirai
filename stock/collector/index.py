@@ -31,7 +31,7 @@ OLD = {'000001': 'sh', '399001': 'sz', '000300': 'hs300', '000016': 'sz50', '399
 
 class Indexer(Thread):
 
-    def __init__(self, name, event=None):
+    def __init__(self, name, q, event=None):
         Thread.__init__(self, group=None, target=None, name=name,
                         args=(), kwargs=None, daemon=False)
         
@@ -43,6 +43,7 @@ class Indexer(Thread):
         # Collect basic data from current records in db
         con = self._index.get_con()
         self.meta = pd.read_sql_query('SELECT * FROM meta.index', con)
+        self.q = q
 
 
     def __get_index(self):
@@ -165,12 +166,13 @@ class Indexer(Thread):
         self.detail.close()
         self.log.info('Finished index data fetch, total: [%s]'%length)
         self.ready.set()
-        return "{'index': %d }"%length
+        self.q.put({'index':length})
+        # return "{'index': %d }"%length
 
 
-def do():
+def do(q):
     ready = Event()
-    Indexer(name='Index-1', event=ready).start()
+    Indexer(name='Index-1', q=q, event=ready).start()
 
     # ready.wait()
 
