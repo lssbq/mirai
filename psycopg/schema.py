@@ -89,14 +89,24 @@ class Schema(object):
         return self
 
     def fetch(self):
+        """
+        Fetch all data from SQL SELECT execution.
+        """
         return self._exec.fetch()
 
-    def select(self, fields: list, exp: str = None, **args):
+    def select(self, fields: list=['*'], where: str = None, **args):
+        """
+        select(fields, where, ...)
+          Select function which perform the SELECT sql operation in database.
+          'fields' give the capability to fetch all column type in DB, also jsonb: ['data->>"state" AS state',]
+            fields: Columns which want to select from dtatbase table
+            where:  The WHERE expression which specified be user (high priority than the key word WHERE expression)
+            args:   Keyword WHERE expression, will be concated like '... WHERE key=value, ...'. Not used if 'where' argument gived.
+        """
         self.__check_ready()
-        log.info('SQL SELECT will be excuted to fetch %s with : %s, %s'%(fields, exp, args))
-        log.trace('Build SELECT expression in %s.%s' %(self.schema, self.table))
-        if exp:
-            self.__sql = 'SELECT '+ ','.join(fields) +' FROM ' + self.schema + '.' +self.table + ' WHERE ' + exp + ';'
+        log.info('SQL SELECT will be excuted to fetch \'%s\' with condition : where=%s, kwargs=%s'%(fields, where, args))
+        if where is not None:
+            self.__sql = 'SELECT '+ ','.join(fields) +' FROM ' + self.schema + '.' +self.table + ' WHERE ' + where + ';'
         elif not args:
             self.__sql = 'SELECT '+ ','.join(fields) +' FROM ' + self.schema + '.' +self.table + ';'
         else:
@@ -104,6 +114,7 @@ class Schema(object):
             for k,v in args.items():
                 _expr += k+'='+v+' AND '
             self.__sql = 'SELECT '+ ','.join(fields) +' FROM ' + self.schema + '.' +self.table + ' WHERE ' + _expr[:-5] + ';'
+        log.trace('Build SELECT expression in %s.%s : %s' %(self.schema, self.table, self.__sql))
         return self
 
     def insert(self, **args):
@@ -151,11 +162,13 @@ class Schema(object):
         self.__sql = _sql
         return self
 
-    def exist(self, t_name):
+    def exist(self):
+        self.__check_ready()
         _sql = "SELECT EXISTS (SELECT 1 FROM information_schema.tables\
-                 WHERE table_schema='%s' AND table_name='%s');"%(self.schema, t_name)
+                 WHERE table_schema='%s' AND table_name='%s');"%(self.schema, self.table)
         self.__sql = _sql
-        return self
+        return self.execute().fetch()[0]['exists']
+        # return self
 
     def get_sql(self):
         """ Return the sql command as string, 
@@ -196,6 +209,13 @@ def get_schema(name: str):
     else:
         log.error('Get schema: \'%s\' not found.' % (name))
         raise SchemaNotFound(name)
+
+def get_con():
+    """
+    Return Psycopg connection object, no depedency of SCHME
+    """
+    db = DB().get_exec()
+    return db.get_con()
 
 
 __all__ = ['get_schema']
