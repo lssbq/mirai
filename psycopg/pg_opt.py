@@ -60,7 +60,9 @@ class DB():
             return self
         
         def fetch(self):
-            return self.cursor.fetchall()
+            columns = [c[0] for c in self.cursor.description]
+            return [dict(zip(columns, item)) for item in self.cursor.fetchall()]
+            # return self.cursor.fetchall()
 
         def get_con(self):
             return self.con
