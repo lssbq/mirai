@@ -89,8 +89,8 @@ class Filler(Thread):
         for code in hs['code']:
             self.log.trace('Update stock detail for: %s'%code)
             # Test if stock detail already in DB, update or create the detail table
-            res = self.detail.exist('s_'+code).execute()
-            if not res.fetch()[0][0]:
+            res = self.detail.set_table('s_'+code).exist()
+            if not res:
                 self.log.info('Update stock %s not exist in DB, to create detail method.'%code)
                 self.create_detail(hs[hs['code']==code])
             else:
@@ -108,8 +108,8 @@ class Filler(Thread):
         self.log.trace('Start fetch detail for code: %s'%code)
         # Create table if not exist
         _t_name = 's_' + code
-        res = self.detail.exist(_t_name).execute()
-        if not res.fetch()[0][0]:
+        res = self.detail.set_table(_t_name).exist()
+        if not res:
             self.log.info('"%s" not exist in DB, create table...'%_t_name)
             self.detail.set_table(_t_name).create_table().execute()
         else:
