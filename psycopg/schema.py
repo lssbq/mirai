@@ -112,7 +112,7 @@ class Schema(object):
         else:
             _expr = ''
             for k,v in args.items():
-                _expr += k+'='+v+' AND '
+                _expr += k+'=\''+v+'\' AND '
             self.__sql = 'SELECT '+ ','.join(fields) +' FROM ' + self.schema + '.' +self.table + ' WHERE ' + _expr[:-5] + ';'
         log.trace('Build SELECT expression in %s.%s : %s' %(self.schema, self.table, self.__sql))
         return self
