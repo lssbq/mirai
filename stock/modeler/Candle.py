@@ -126,12 +126,5 @@ class _Candle():
         return Decimal((l_body - self.low)/total, RATIO_PREC)
 
     def __str__(self):
-        string = 'On %s, open: %s, high: %s, close: %s, low: %s, volume: %s'%(self.date,self.open,self.high,self.close,self.log,self.volume)
+        string = 'On %s, open: %s, high: %s, close: %s, low: %s, volume: %s'%(self.date,self.open,self.high,self.close,self.low,self.volume)
         return string
-
-
-if __name__ == '__main__':
-    s = _Candle(**{'date':'2018-03-30', 'open':11.04, 'high':11.05, 'close':10.90, 'low':10.88, 'volume':752173.69,
-               'price_change':-0.15, 'p_change':-1.36, 'ma5':10.942, 'ma10':11.326, 'ma20':11.640,
-               'v_ma5':1133866.31, 'v_ma10':1150909.90, 'v_ma20':1078994.39, 'turnover':0.44})
-    print(s.open_high)

@@ -17,7 +17,6 @@ import uuid
 import numpy as np
 import pandas as pd
 import tushare as ts
-import datetime as dt
 import psycopg.schema as schema
 from urllib.error import HTTPError
 from Logger.Logger import Logger
@@ -31,7 +30,7 @@ OLD = {'000001': 'sh', '399001': 'sz', '000300': 'hs300', '000016': 'sz50', '399
 
 class Indexer(Thread):
 
-    def __init__(self, name, q, event=None):
+    def __init__(self, name, date, q, event=None):
         Thread.__init__(self, group=None, target=None, name=name,
                         args=(), kwargs=None, daemon=False)
         
@@ -44,6 +43,7 @@ class Indexer(Thread):
         con = self._index.get_con()
         self.meta = pd.read_sql_query('SELECT * FROM meta.index', con)
         self.q = q
+        self.today = date
 
 
     def __get_index(self):
@@ -55,7 +55,7 @@ class Indexer(Thread):
 
 
     def get_index(self):
-        _today = dt.date.today().isoformat()
+        _today = self.today
 
         self.log.info('Start update index on : %s'%_today)
 
@@ -170,9 +170,9 @@ class Indexer(Thread):
         # return "{'index': %d }"%length
 
 
-def do(q):
+def do(today, q):
     ready = Event()
-    Indexer(name='Index-1', q=q, event=ready).start()
+    Indexer(name='Index-1', date=today, q=q, event=ready).start()
 
     # ready.wait()
 

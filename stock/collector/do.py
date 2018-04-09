@@ -49,8 +49,8 @@ def _update_meta(**kargs):
     daily.close()
 
 def _job():
-    f = Thread(target=fill.do, args=(q, THREAD_NUM), name='Init-fill')
-    i = Thread(target=index.do, args=(q,), name='Init-index')
+    f = Thread(target=fill.do, args=(today, q, THREAD_NUM), name='Init-fill')
+    i = Thread(target=index.do, args=(today, q), name='Init-index')
     f.start()
     i.start()
 

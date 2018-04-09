@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import schedule
 import re
-import datetime as dt
 import psycopg.schema as schema
 from threading import Thread
 from stock.collector.basic import *
@@ -26,6 +25,7 @@ class Filler(Thread):
         con = self.basic.get_con()
         self.meta = pd.read_sql_query('SELECT * FROM meta.code', con)
         # self.hs = pd.DataFrame()
+        self.today = kwargs['today']
         self.hs = kwargs['hs']
         self.q = kwargs['q']
 
@@ -83,7 +83,7 @@ class Filler(Thread):
     @LogTime()
     def update_detail(self, hs):
         self.log.info('Start update details, got %s to be updated.'%len(hs))
-        _today = dt.date.today().isoformat()
+        _today = self.today
         if not len(hs):
             return None
         for code in hs['code']:
@@ -150,7 +150,7 @@ class Filler(Thread):
 
 
 
-def do(q, threads=10):
+def do(today, q, threads=10):
     hs = get_basics()
     total = len(hs.index)
     total = len(hs)    
@@ -160,7 +160,7 @@ def do(q, threads=10):
             sub = hs[(step*i) : total]
         else:
             sub = hs[(step*i) : step*(i+1)]
-        Filler('filler-%s'%i, hs=sub, q=q).start()
+        Filler('filler-%s'%i, today=today, hs=sub, q=q).start()
 
 
 # hs['sh50'] = np.where(hs['code'].isin(sh['code']), True, False)
