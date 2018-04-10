@@ -59,6 +59,7 @@ def _uuid(_val):
     raise ValueError('Incorrect value format uuid: %s'%_val)
 
 def _varchar(_val, _type):
+    _val = str(_val)
     _len = re.search(r'varchar\((\d*)\)', _type).group(1)
     if len(_val) > int(_len):
         raise ValueError('Value is toooooo long!')
