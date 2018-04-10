@@ -157,7 +157,7 @@ class Schema(object):
 
     def create_table(self):
         self.__check_ready()
-        log.info('Prepare to create table in SCHEMA: %s.s_%s' %(self.name, self.name))
+        log.info('Prepare to create table in SCHEMA: %s.%s' %(self.name, self.table))
         _sql = "CREATE TABLE IF NOT EXISTS %s (%s);"%(self.schema + '.' + self.table, self.__field_create()[:-1])
         self.__sql = _sql
         return self
