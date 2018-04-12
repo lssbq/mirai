@@ -1,13 +1,11 @@
 # -*- coding:utf-8 -*-
 import uuid
-import numpy as np
 import pandas as pd
-import schedule
-import re
+import datetime as dt
 import psycopg.schema as schema
 from threading import Thread
 from stock.collector.basic import *
-from stock.collector.detail import *
+from stock.collector.detail import get_detail
 from Logger.Logger import Logger
 from utils.Timer import LogTime
 
@@ -35,39 +33,30 @@ class Filler(Thread):
         Just update the stocks already in database, for the new stocks will process after it return
         """
         try:
-            # self.log.info('Fetch stocks basic data from Tushare.')
-            # global hs
-            # self.hs = get_basics()
-
             # Add guid(uuid) column to HS DataFrame
             self.hs['guid'] = [uuid.uuid4() for _ in range(len(self.hs))]
             self.log.info('Update stocks basic in database.')
-            self.update_basic(self.hs, self.meta)
-            update = self.hs.reindex(['guid', 'code'], axis=1)
             # Filt new stock and create table for them
-            add = update[[not item for item in self.hs['code'].isin(self.meta['code'])]]
+            add = self.hs[[not item for item in self.hs['code'].isin(self.meta['code'])]]
 
             self.update_detail(self.hs[[bool(item) for item in self.hs['code'].isin(self.meta['code'])]])
-            self.basic.commit()
             return add
         except Exception as err:
             self.basic.rollback()
             raise err
 
 
-    def update_basic(self, df, meta_df):
-        # Get current records from db, return 'giuid' and 'code'
-        # select = basic.select(['guid', 'code'])
-
+    def update_basic(self, guid, df, isnew = False):
         # Update or insert BASIC_STOCKS
-        for key, item in df.to_dict('index').items():
-            if np.isin(item['code'], meta_df['code']):
-                self.log.trace('%s already in basic table, update only.'%item['code'])
-                guid = meta_df[meta_df.code==item['code']].guid.values[0]
-                self.basic.update(guid, **item).execute()
-            else:
-                self.log.trace('Insert new stock into database: %s'%item['code'])
-                self.basic.insert(**item).execute()
+        item = list(df.to_dict('index').values())[0]
+        item['guid'] = guid
+        if not isnew:
+            self.log.trace('%s already in basic table, update only.'%item['code'])
+            # guid = self.meta[self.meta.code==item['code']].guid.values[0]
+            self.basic.update(guid, **item).execute()
+        else:
+            self.log.trace('Insert new stock into database: %s'%item['code'])
+            self.basic.insert(**item).execute()
 
 
     def update_meta(self, guid=None, code=None):
@@ -87,19 +76,21 @@ class Filler(Thread):
         if not len(hs):
             return None
         for code in hs['code']:
-            self.log.trace('Update stock detail for: %s'%code)
+            self.log.trace('Update stock detail for: \'%s\' on %s'%(code,_today))
+            guid = self.meta[self.meta.code==code].guid.values[0]
             # Test if stock detail already in DB, update or create the detail table
             res = self.detail.set_table('s_'+code).exist()
             if not res:
-                self.log.info('Update stock %s not exist in DB, to create detail method.'%code)
-                self.create_detail(hs[hs['code']==code])
+                self.log.trace('Update stock %s not exist in DB, to create detail method.'%code)
+                self.create_detail(hs[hs['code']==code], guid)
             else:
-                _d = get_detail(code, _today)
+                _d = get_detail(code, date=_today)
                 if not _d.empty:
                     self.log.trace('Successfully get stock %s data for today: %s'%(code, _today))
                     __d = dict(list(_d.to_dict('index').values())[0])
                     self.detail.set_table('s_'+code).insert(**__d).execute()
-                    guid = self.meta[self.meta.code==code].guid.values[0]
+                    self.update_basic(guid, hs[hs['code']==code])
+                    self.basic.commit()
                     self.detail.commit()
 
 
@@ -108,6 +99,19 @@ class Filler(Thread):
         self.log.trace('Start fetch detail for code: %s'%code)
         # Create table if not exist
         _t_name = 's_' + code
+        # Get history data
+        try:
+            ttm = self.hs[self.hs['code']==code]['time_to_market'].values[0]
+            if ttm:
+                ttm = dt.datetime.strptime(str(ttm),'%Y%m%d').strftime('%Y-%m-%d')
+            _df = get_detail(code, ttm=ttm)
+        except Exception:
+            return False
+        self.log.trace('Successfully got detail data : %s'%len(_df))
+        # New stock returns empty dataframe, skip it.
+        if _df.empty:
+            return False
+        # Prepare table in db
         res = self.detail.set_table(_t_name).exist()
         if not res:
             self.log.info('"%s" not exist in DB, create table...'%_t_name)
@@ -115,26 +119,21 @@ class Filler(Thread):
         else:
             self.log.info('"%s" already exist in DB, drop data...'%_t_name)
             self.detail.set_table(_t_name).delete('true').execute()
-        # Get history data
-        self.log.info('Fetch detail for code: %s'%code)
-        try:
-            _df = get_detail(code)
-        except Exception:
-            # If exception caught, skip this stock and continue next
-            self.detail.commit()
-            return False
-        self.log.trace('Successfully got detail data : %s'%len(_df))
+        # Insert into detail table
         for k, v in _df.to_dict('index').items():
             self.detail.set_table(_t_name).insert(**(v)).execute()
         return True
 
 
-    def create_detail(self, add):
-        self.log.info('Create detail table for newer records from daily basics: %s'%len(add))
+    def create_detail(self, add, guid=None):
+        self.log.info('Create detail for newer records from daily basics: %s'%len(add))
         for item in add.to_dict('index').values():
             res = self._fetch_detail(item['code'])
             if res:
+                gid = guid if guid is not None else item['guid']
+                self.update_basic(gid, item, True)
                 self.update_meta(guid=item['guid'], code=item['code'])
+            self.basic.commit()
             self.detail.commit()
 
     def run(self):

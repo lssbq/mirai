@@ -5,7 +5,9 @@ Nested in Candle object.
 """
 from decimal import Decimal as _Decimal
 
-MA = ['ma5', 'ma10', 'ma20', 'v_ma5', 'v_ma10', 'v_ma20']
+# MA = ['ma5', 'ma10', 'ma20', 'v_ma5', 'v_ma10', 'v_ma20']
+MA = list()
+
 
 def Decimal(value: str):
     vlaue = str(value)
