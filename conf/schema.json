@@ -62,12 +62,6 @@
                 "volume": "float8",
                 "price_change": "float8",
                 "p_change": "float8",
-                "ma5": "float8",
-                "ma10": "float8",
-                "ma20": "float8",
-                "v_ma5": "float8",
-                "v_ma10": "float8",
-                "v_ma20": "float8",
                 "turnover": "float8"
             }
         }
