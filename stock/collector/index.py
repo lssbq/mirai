@@ -132,7 +132,8 @@ class Indexer(Thread):
             else:
                 _data = ts.get_hist_data(code, start=date)
             if _data is not None and not _data.empty:
-                return _data.reset_index()
+                return _data.reset_index().reindex(['date','open','high','close','low','volume',
+                                                    'price_change','p_change','turnover'], axis=1)
             else:
                 return pd.DataFrame()
         except Exception as err:
@@ -150,6 +151,7 @@ class Indexer(Thread):
             else:
                 _data = ts.get_k_data(code, index=True, start=date)
             if _data is not None and not _data.empty:
+                # TODO Calculate price change and p change, ignore turnover
                 return _data.reindex(['date', 'open', 'close', 'high', 'low', 'volume'], axis=1)
             else:
                 return pd.DataFrame()
@@ -177,8 +179,3 @@ def do(today, q):
     # ready.wait()
 
     return None
-
-
-
-if __name__ == '__main__':
-    do()
