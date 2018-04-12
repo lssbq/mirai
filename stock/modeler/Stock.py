@@ -52,7 +52,7 @@ class Stock():
         days = int(days)
         # {date:'2000-01-01' , return: ln(S/S')}
         res = list()
-        for i in range(0, len(self.candle), days):
+        for i in range(days, len(self.candle), days):
             date = str(self.candle[i].date)
             cal = math.log((self.candle[i].close / self.candle[i-days].close))
             ret = Decimal(cal, RATIO_PREC)

@@ -10,8 +10,8 @@ from decimal import Decimal as _Decimal
 
 
 CANDLE = ['open', 'close', 'high', 'low', 'price_change', 'p_change', 'volume', 'turnover']
-FIELDS = ['date', 'open', 'high', 'close', 'low', 'volume', 'price_change', 'p_change',
-            'ma5', 'ma10', 'ma20', 'v_ma5', 'v_ma10', 'v_ma20', 'turnover']
+FIELDS = ['date', 'open', 'high', 'close', 'low', 'volume', 'price_change', 'p_change', 'turnover']
+
 VALUE_PREC = '.001'
 RATIO_PREC = '.00001'
 
@@ -33,7 +33,7 @@ def Decimal(value: str, prec = VALUE_PREC):
 #       l_ratio:        (R)lower shadow ratio in a day amplitude
 class _Candle():
     def __init__(self, **kwargs):
-        if len(kwargs) == 15:
+        if len(kwargs) == len(FIELDS):
             for item in FIELDS:
                 assert item in kwargs, 'Missing key args: \'%s\''%item
                 if item in CANDLE:

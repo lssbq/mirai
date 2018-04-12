@@ -38,6 +38,8 @@ class Stocker():
         self.instance = None
         basic = self.__from_db()
         self.instance = Stock(basic['basic'], basic['details'])
+        for i in (5, 10, 20):
+            self.instance.ma_cal(i)
 
     def get(self) -> Stock:
         assert self.instance, 'Could not get stock \'%s\' details.'%self.stock
