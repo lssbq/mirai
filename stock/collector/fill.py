@@ -131,7 +131,7 @@ class Filler(Thread):
             res = self._fetch_detail(item['code'])
             if res:
                 gid = guid if guid is not None else item['guid']
-                self.update_basic(gid, item, True)
+                self.update_basic(gid, add[add['code']==item['code']], True)
                 self.update_meta(guid=item['guid'], code=item['code'])
             self.basic.commit()
             self.detail.commit()
