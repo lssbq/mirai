@@ -94,5 +94,43 @@
                 "data": "jsonb"
             }
         }
+    },
+    {
+        "INDUSTRY": {
+            "schema": "meta",
+            "table": "industry",
+            "fields": {
+                "guid": "uuid",
+                "name": "varchar(20)",
+                "list": "jsonb"
+            }
+        }
+    },
+    {
+        "CONCEPT": {
+            "schema": "meta",
+            "table": "concept",
+            "fields": {
+                "guid": "uuid",
+                "name": "varchar(20)",
+                "list": "jsonb"
+            }
+        }
+    },
+    {
+        "REPORT": {
+            "schema": "basic",
+            "table": "report",
+            "fields": {
+                "guid": "uuid",
+                "code": "varchar(20)",
+                "name": "varchar(20)",
+                "profit": "jsonb",
+                "operation": "jsonb",
+                "growth": "jsonb",
+                "debt": "jsonb",
+                "cash_flow": "jsonb"
+            }
+        }
     }
 ]
