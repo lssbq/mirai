@@ -8,6 +8,8 @@ from stock.collector.basic import *
 from stock.collector.detail import get_detail
 from Logger.Logger import Logger
 from utils.Timer import LogTime
+from stock.collector import industry
+from stock.collector import concept
 
 
 class Filler(Thread):
@@ -140,6 +142,7 @@ class Filler(Thread):
         self.log.info('Start daily task to fetch basic info')
         add = self.basic_daily()
         self.create_detail(add)
+        # TODO Update insustry in meta schema
         self.basic.close()
         self._meta.close()
         self.detail.close()
@@ -152,7 +155,7 @@ class Filler(Thread):
 def do(today, q, threads=10):
     hs = get_basics()
     total = len(hs.index)
-    total = len(hs)    
+    total = len(hs)
     step = total//threads
     for i in range(threads):
         if i == threads-1:
@@ -160,14 +163,5 @@ def do(today, q, threads=10):
         else:
             sub = hs[(step*i) : step*(i+1)]
         Filler('filler-%s'%i, today=today, hs=sub, q=q).start()
-
-
-# hs['sh50'] = np.where(hs['code'].isin(sh['code']), True, False)
-
-# hs.merge(hs300_, on='code', how='left')
-# hs.rename({'weight': 'hs300'}, axis='columns', inplace=True)
-
-# hs['zz500'] = np.where(hs['code'].isin(zz500['code']), True, False)
-
-# Filte sme 中小板
-# np.where(hs['code'].apply(lambda item: re.match(item, r'^002.*')), True, False)
+    industry.do(hs)
+    concept.do(hs)
