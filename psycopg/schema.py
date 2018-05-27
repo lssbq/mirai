@@ -142,6 +142,12 @@ class Schema(object):
         self.__sql = 'DELETE FROM ' + self.schema + '.' +self.table + ' WHERE ' + exp + ';'
         return self
 
+    def delete_all(self):
+        self.__check_ready()
+        log.info('SQL DELETE will be excuted to drop ALL data in "%s.%s"'%(self.schema, self.table))
+        self.__sql = 'DELETE FROM ' + self.schema + '.' +self.table + ';'
+        return self
+    
     def get_table(self):
         self.__check_ready()
         return self.schema + '.' + self.table
